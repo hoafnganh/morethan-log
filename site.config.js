@@ -2,11 +2,11 @@ const CONFIG = {
   // profile setting (required)
   profile: {
     name: "hoafnganh",
-    image: "/avatar-1.svg", // If you want to create your own notion avatar, check out https://notion-avatar.vercel.app
+    image: "https://notion-avatar.app/api/svg/eyJmYWNlIjo3LCJub3NlIjoxMywibW91dGgiOjEsImV5ZXMiOjEwLCJleWVicm93cyI6MywiZ2xhc3NlcyI6MiwiaGFpciI6MzQsImFjY2Vzc29yaWVzIjowLCJkZXRhaWxzIjowLCJiZWFyZCI6MCwiZmxpcCI6MCwiY29sb3IiOiJyZ2JhKDI1NSwgMCwgMCwgMCkiLCJzaGFwZSI6Im5vbmUifQ==", // If you want to create your own notion avatar, check out https://notion-avatar.vercel.app
     role: "cyber security learner",
     bio: "Post and Telecommunications Institute of Technology.",
     email: "dhoanganh25705@gmail.com",
-    linkedin: "https://www.linkedin.com/in/anh-duong-hoang-176294380/",
+    linkedin: "anh-duong-hoang-176294380/",
     github: "hoafnganh",
     instagram: "https://www.instagram.com/hoang.anh.2507/",
   },
