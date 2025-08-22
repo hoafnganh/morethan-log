@@ -6,6 +6,7 @@ const CONFIG = {
     role: "cyber security learner",
     bio: "Post and Telecommunications Institute of Technology.",
     email: "dhoanganh25705@gmail.com",
+    linkedin: "https://www.linkedin.com/in/anh-duong-hoang-176294380/",
     github: "hoafnganh",
     instagram: "https://www.instagram.com/hoang.anh.2507/",
   },
