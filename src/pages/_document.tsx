@@ -6,17 +6,24 @@ class MyDocument extends Document {
     return (
       <Html lang={CONFIG.lang}>
         <Head>
-          <link rel="icon" href="/favicon.ico" />
-          <link
-            rel="apple-touch-icon"
-            sizes="192x192"
-            href="/apple-touch-icon.png"
-          ></link>
-          <link
-            rel="alternate"
-            type="application/rss+xml"
-            title="RSS 2.0"
-            href="/feed"
+          {/* favicon mặc định */}
+            <link rel="icon" href="/favicon.ico" />
+
+            {/* nếu có icon khác */}
+            <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+            <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+
+            <link
+              rel="apple-touch-icon"
+              sizes="192x192"
+              href="/apple-touch-icon.png"
+            />
+
+            <link
+              rel="alternate"
+              type="application/rss+xml"
+              title="RSS 2.0"
+              href="/feed"
           ></link>
           {/* google search console */}
           {CONFIG.googleSearchConsole.enable === true && (
