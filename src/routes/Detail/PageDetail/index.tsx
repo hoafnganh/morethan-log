@@ -2,6 +2,8 @@ import React from "react"
 import styled from "@emotion/styled"
 import NotionRenderer from "../components/NotionRenderer"
 import usePostQuery from "src/hooks/usePostQuery"
+import TableOfContents from "src/components/TableOfContents"
+
 type Props = {}
 
 const PageDetail: React.FC<Props> = () => {
@@ -10,6 +12,7 @@ const PageDetail: React.FC<Props> = () => {
   if (!data) return null
   return (
     <StyledWrapper>
+      <TableOfContents blockMap={data.recordMap} />  {/* THÊM DÒNG NÀY */}
       <NotionRenderer recordMap={data.recordMap} />
     </StyledWrapper>
   )
@@ -21,3 +24,6 @@ const StyledWrapper = styled.div`
   margin: 0 auto;
   max-width: 56rem;
 `
+
+
+

@@ -6,6 +6,7 @@ import Category from "src/components/Category"
 import styled from "@emotion/styled"
 import NotionRenderer from "../components/NotionRenderer"
 import usePostQuery from "src/hooks/usePostQuery"
+import TableOfContents from 'src/components/TableOfContents'
 
 type Props = {}
 
@@ -27,6 +28,7 @@ const PostDetail: React.FC<Props> = () => {
           </div>
         )}
         {data.type[0] === "Post" && <PostHeader data={data} />}
+        <TableOfContents blockMap={data.recordMap} />  {/* THÊM DÒNG NÀY */}
         <div>
           <NotionRenderer recordMap={data.recordMap} />
         </div>
@@ -60,3 +62,6 @@ const StyledWrapper = styled.div`
     max-width: 42rem;
   }
 `
+
+
+
