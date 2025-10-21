@@ -44,7 +44,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           
           if (text) {
             headings.push({
-              id: key,
+              id: key.replace(/-/g, ''), // LO ẠI BỎ DẤU GẠCH NGANG
               text,
               level
             });
@@ -62,11 +62,9 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
     const handleScroll = () => {
       if (toc.length === 0) return;
 
-      // Tìm heading bằng class pattern
       const headingElements: Array<{ id: string; top: number }> = [];
       
       toc.forEach(item => {
-        // Tìm heading element bằng class chứa block ID
         const heading = document.querySelector(`.notion-block-${item.id}`);
         
         if (heading) {
@@ -104,7 +102,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
     
     console.log('Scrolling to block ID:', id);
     
-    // Tìm heading element bằng class chứa block ID
     const heading = document.querySelector(`.notion-block-${id}`) as HTMLElement;
     
     console.log('Found element:', heading);
@@ -115,7 +112,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
       
       window.scrollTo({ top: y, behavior: 'smooth' });
       
-      // Visual feedback
       heading.classList.add('toc-flash');
       setTimeout(() => {
         heading.classList.remove('toc-flash');
