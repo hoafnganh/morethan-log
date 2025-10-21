@@ -1,192 +1,88 @@
-import React, { useEffect, useState } from 'react';
+import React from "react"
+import Detail from "src/routes/Detail"
+import { filterPosts } from "src/libs/utils/notion"
+import { CONFIG } from "site.config"
+import { NextPageWithLayout } from "../types"
+import CustomError from "src/routes/Error"
+import { getRecordMap, getPosts } from "src/apis"
+import MetaConfig from "src/components/MetaConfig"
+import { GetStaticProps } from "next"
+import { queryClient } from "src/libs/react-query"
+import { queryKey } from "src/constants/queryKey"
+import { dehydrate } from "@tanstack/react-query"
+import usePostQuery from "src/hooks/usePostQuery"
+import { FilterPostsOptions } from "src/libs/utils/notion/filterPosts"
 
-interface TocItem {
-  id: string;
-  text: string;
-  level: number;
+const filter: FilterPostsOptions = {
+  acceptStatus: ["Public", "PublicOnDetail"],
+  acceptType: ["Paper", "Post", "Page"],
 }
 
-interface TableOfContentsProps {
-  blockMap: any; // Notion block map từ react-notion-x
+export const getStaticPaths = async () => {
+  const posts = await getPosts()
+  const filteredPost = filterPosts(posts, filter)
+
+  return {
+    paths: filteredPost.map((row) => `/${row.slug}`),
+    fallback: true,
+  }
 }
 
-const TableOfContents: React.FC<TableOfContentsProps> = ({ blockMap }) => {
-  const [toc, setToc] = useState<TocItem[]>([]);
-  const [activeId, setActiveId] = useState<string>('');
+export const getStaticProps: GetStaticProps = async (context) => {
+  const slug = context.params?.slug
 
-  useEffect(() => {
-    // Trích xuất headings từ blockMap
-    const extractHeadings = () => {
-      const headings: TocItem[] = [];
-      
-      if (!blockMap?.block) return headings;
+  const posts = await getPosts()
+  const feedPosts = filterPosts(posts)
+  await queryClient.prefetchQuery(queryKey.posts(), () => feedPosts)
 
-      Object.keys(blockMap.block).forEach((key) => {
-        const block = blockMap.block[key]?.value;
-        if (!block) return;
+  const detailPosts = filterPosts(posts, filter)
+  const postDetail = detailPosts.find((t: any) => t.slug === slug)
+  const recordMap = await getRecordMap(postDetail?.id!)
 
-        const type = block.type;
-        
-        // Lấy H1, H2, H3
-        if (['header', 'sub_header', 'sub_sub_header'].includes(type)) {
-          const level = type === 'header' ? 1 : type === 'sub_header' ? 2 : 3;
-          const text = block.properties?.title?.[0]?.[0] || '';
-          
-          headings.push({
-            id: key,
-            text,
-            level
-          });
-        }
-      });
+  await queryClient.prefetchQuery(queryKey.post(`${slug}`), () => ({
+    ...postDetail,
+    recordMap,
+  }))
 
-      return headings;
-    };
+  return {
+    props: {
+      dehydratedState: dehydrate(queryClient),
+    },
+    revalidate: CONFIG.revalidateTime,
+  }
+}
 
-    setToc(extractHeadings());
-  }, [blockMap]);
+const DetailPage: NextPageWithLayout = () => {
+  const post = usePostQuery()
 
-  useEffect(() => {
-    // Theo dõi scroll để highlight heading hiện tại
-    const handleScroll = () => {
-      const headingElements = toc.map(item => {
-        return document.getElementById(item.id);
-      }).filter(el => el !== null);
+  if (!post) return <CustomError />
 
-      for (let i = headingElements.length - 1; i >= 0; i--) {
-        const element = headingElements[i];
-        if (element && element.getBoundingClientRect().top <= 100) {
-          setActiveId(toc[i].id);
-          break;
-        }
-      }
-    };
+  const image =
+    post.thumbnail ??
+    CONFIG.ogImageGenerateURL ??
+    `${CONFIG.ogImageGenerateURL}/${encodeURIComponent(post.title)}.png`
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [toc]);
+  const date = post.date?.start_date || post.createdTime || ""
 
-  const scrollToHeading = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-
-  if (toc.length === 0) return null;
+  const meta = {
+    title: post.title,
+    date: new Date(date).toISOString(),
+    image: image,
+    description: post.summary || "",
+    type: post.type[0],
+    url: `${CONFIG.link}/${post.slug}`,
+  }
 
   return (
-    <div className="table-of-contents">
-      <h3 className="toc-title">Mục lục</h3>
-      <nav className="toc-nav">
-        <ul className="toc-list">
-          {toc.map((item) => (
-            <li
-              key={item.id}
-              className={`toc-item toc-level-${item.level} ${
-                activeId === item.id ? 'active' : ''
-              }`}
-              style={{ paddingLeft: `${(item.level - 1) * 16}px` }}
-            >
-              <a
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToHeading(item.id);
-                }}
-                href={`#${item.id}`}
-              >
-                {item.text}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+    <>
+      <MetaConfig {...meta} />
+      <Detail />
+    </>
+  )
+}
 
-      <style jsx>{`
-        .table-of-contents {
-          background: var(--bg-color, #f7f7f7);
-          border-radius: 8px;
-          padding: 20px;
-          margin-bottom: 32px;
-          border: 1px solid var(--border-color, #e0e0e0);
-        }
+DetailPage.getLayout = (page) => {
+  return <>{page}</>
+}
 
-        .toc-title {
-          font-size: 18px;
-          font-weight: 600;
-          margin: 0 0 12px 0;
-          color: var(--text-color, #000);
-        }
-
-        .toc-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-        }
-
-        .toc-item {
-          margin: 8px 0;
-          transition: all 0.2s ease;
-        }
-
-        .toc-item a {
-          color: var(--text-secondary, #666);
-          text-decoration: none;
-          cursor: pointer;
-          display: block;
-          padding: 4px 8px;
-          border-radius: 4px;
-          transition: all 0.2s ease;
-        }
-
-        .toc-item a:hover {
-          background: var(--hover-bg, #e8e8e8);
-          color: var(--text-color, #000);
-        }
-
-        .toc-item.active a {
-          color: var(--primary-color, #0066cc);
-          font-weight: 500;
-          background: var(--active-bg, #e3f2fd);
-        }
-
-        .toc-level-1 {
-          font-weight: 500;
-        }
-
-        .toc-level-2 {
-          font-size: 14px;
-        }
-
-        .toc-level-3 {
-          font-size: 13px;
-        }
-
-        /* Dark mode support */
-        @media (prefers-color-scheme: dark) {
-          .table-of-contents {
-            --bg-color: #1a1a1a;
-            --border-color: #333;
-            --text-color: #fff;
-            --text-secondary: #aaa;
-            --hover-bg: #2a2a2a;
-            --active-bg: #1e3a5f;
-            --primary-color: #4d9fff;
-          }
-        }
-
-        [data-theme='dark'] .table-of-contents {
-          --bg-color: #1a1a1a;
-          --border-color: #333;
-          --text-color: #fff;
-          --text-secondary: #aaa;
-          --hover-bg: #2a2a2a;
-          --active-bg: #1e3a5f;
-          --primary-color: #4d9fff;
-        }
-      `}</style>
-    </div>
-  );
-};
-
-export default TableOfContents;
+export default DetailPage
