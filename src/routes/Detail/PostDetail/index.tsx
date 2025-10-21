@@ -28,7 +28,7 @@ const PostDetail: React.FC<Props> = () => {
           </div>
         )}
         {data.type[0] === "Post" && <PostHeader data={data} />}
-        <TableOfContents blockMap={data.recordMap} />  {/* THÊM DÒNG NÀY */}
+        <TableOfContents recordMap={data.recordMap} />  {/* THÊM DÒNG NÀY */}
         <div>
           <NotionRenderer recordMap={data.recordMap} />
         </div>

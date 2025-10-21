@@ -12,7 +12,7 @@ const PageDetail: React.FC<Props> = () => {
   if (!data) return null
   return (
     <StyledWrapper>
-      <TableOfContents blockMap={data.recordMap} />  {/* THÊM DÒNG NÀY */}
+      <TableOfContents recordMap={data.recordMap} />  {/* THÊM DÒNG NÀY */}
       <NotionRenderer recordMap={data.recordMap} />
     </StyledWrapper>
   )
