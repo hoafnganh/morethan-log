@@ -13,7 +13,7 @@ interface TableOfContentsProps {
 const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
   const [toc, setToc] = useState<TocItem[]>([]);
   const [activeId, setActiveId] = useState<string>('');
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
 
   useEffect(() => {
     const extractHeadings = () => {
@@ -47,24 +47,20 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Tìm tất cả các heading elements
-      const headingElements: Array<{ id: string; element: Element; top: number }> = [];
+      const headingElements: Array<{ id: string; top: number }> = [];
       
       toc.forEach(item => {
-        // react-notion-x render blocks với class .notion-block-{id}
         const element = document.querySelector(`.notion-block-${item.id}`);
         if (element) {
           const rect = element.getBoundingClientRect();
           headingElements.push({
             id: item.id,
-            element: element,
             top: rect.top + window.scrollY
           });
         }
       });
 
-      // Tìm heading gần nhất đang được view
-      const scrollPosition = window.scrollY + 150;
+      const scrollPosition = window.scrollY + 120;
       
       for (let i = headingElements.length - 1; i >= 0; i--) {
         if (scrollPosition >= headingElements[i].top) {
@@ -79,26 +75,19 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
     };
 
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Call once to set initial active
+    handleScroll();
     
     return () => window.removeEventListener('scroll', handleScroll);
   }, [toc]);
 
   const scrollToHeading = (id: string) => {
-    // react-notion-x sử dụng class .notion-block-{id} cho mỗi block
     const element = document.querySelector(`.notion-block-${id}`);
     
     if (element) {
-      const yOffset = -100; // Offset để không bị header che
+      const yOffset = -80;
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       
       window.scrollTo({ top: y, behavior: 'smooth' });
-      
-      // Highlight animation
-      element.classList.add('toc-highlight');
-      setTimeout(() => {
-        element.classList.remove('toc-highlight');
-      }, 2000);
     }
   };
 
@@ -107,250 +96,284 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
   return (
     <>
       <div 
-        className={`toc-sidebar ${isExpanded ? 'expanded' : ''}`}
-        onMouseEnter={() => setIsExpanded(true)}
-        onMouseLeave={() => setIsExpanded(false)}
+        className={`notion-toc-container ${isHovered ? 'hovered' : ''}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="toc-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 4h18M3 12h18M3 20h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+        {/* Icon bars - hiển thị khi không hover */}
+        <div className="notion-toc-bars">
+          {toc.slice(0, 15).map((item, index) => (
+            <div 
+              key={item.id}
+              className={`notion-toc-bar ${activeId === item.id ? 'active' : ''} level-${item.level}`}
+              style={{
+                width: item.level === 1 ? '16px' : item.level === 2 ? '12px' : '8px'
+              }}
+            />
+          ))}
+          {toc.length > 15 && <div className="notion-toc-bar-more">...</div>}
         </div>
-        
-        <div className="toc-content">
-          <div className="toc-header">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 4h18M3 12h18M3 20h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <span className="toc-title">Mục lục</span>
+
+        {/* Panel mục lục - hiển thị khi hover */}
+        <div className="notion-toc-panel">
+          <div className="notion-toc-header">
+            <span>Mục lục</span>
           </div>
-          <nav className="toc-nav">
-            <ul className="toc-list">
-              {toc.map((item) => (
-                <li
-                  key={item.id}
-                  className={`toc-item toc-level-${item.level} ${
-                    activeId === item.id ? 'active' : ''
-                  }`}
-                  style={{ paddingLeft: `${(item.level - 1) * 12 + 8}px` }}
-                >
-                  <a
-                    onClick={(e) => {
-                      e.preventDefault();
-                      scrollToHeading(item.id);
-                    }}
-                    href={`#${item.id}`}
-                    title={item.text}
-                  >
-                    {item.text}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <div className="notion-toc-content">
+            {toc.map((item) => (
+              <div
+                key={item.id}
+                className={`notion-toc-item ${activeId === item.id ? 'active' : ''} level-${item.level}`}
+                onClick={() => scrollToHeading(item.id)}
+                style={{
+                  paddingLeft: `${(item.level - 1) * 16 + 12}px`
+                }}
+              >
+                <span className="notion-toc-text">{item.text}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       <style jsx global>{`
-        /* Highlight animation khi click vào TOC */
-        .toc-highlight {
-          animation: toc-flash 2s ease;
-        }
-
-        @keyframes toc-flash {
-          0%, 100% {
-            background-color: transparent;
-          }
-          50% {
-            background-color: rgba(59, 130, 246, 0.2);
-          }
-        }
-
-        .toc-sidebar {
+        .notion-toc-container {
           position: fixed;
           top: 50%;
-          right: 0;
+          right: 16px;
           transform: translateY(-50%);
-          width: 48px;
-          max-height: calc(100vh - 120px);
-          background: var(--bg-color, #ffffff);
-          border: 1px solid var(--border-color, #e0e0e0);
-          border-right: none;
-          border-radius: 8px 0 0 8px;
-          box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-          transition: width 0.3s ease, box-shadow 0.3s ease;
           z-index: 1000;
+          pointer-events: auto;
+        }
+
+        /* Bars - mặc định */
+        .notion-toc-bars {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 8px 4px;
+          align-items: flex-end;
+          transition: opacity 0.2s ease;
+        }
+
+        .notion-toc-container.hovered .notion-toc-bars {
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .notion-toc-bar {
+          height: 2px;
+          background: rgba(55, 53, 47, 0.3);
+          border-radius: 1px;
+          transition: all 0.2s ease;
+        }
+
+        .notion-toc-bar.active {
+          background: rgba(35, 131, 226, 0.8);
+          height: 3px;
+        }
+
+        .notion-toc-bar.level-1 {
+          background: rgba(55, 53, 47, 0.4);
+        }
+
+        .notion-toc-bar.level-2 {
+          background: rgba(55, 53, 47, 0.3);
+        }
+
+        .notion-toc-bar.level-3 {
+          background: rgba(55, 53, 47, 0.2);
+        }
+
+        .notion-toc-bar-more {
+          font-size: 10px;
+          color: rgba(55, 53, 47, 0.4);
+          text-align: right;
+          padding-right: 2px;
+        }
+
+        /* Panel - khi hover */
+        .notion-toc-panel {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 280px;
+          max-height: calc(100vh - 100px);
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+          opacity: 0;
+          visibility: hidden;
+          transform: translateX(20px);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          flex-direction: column;
           overflow: hidden;
         }
 
-        .toc-sidebar.expanded {
-          width: 300px;
-          box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
-        }
-
-        .toc-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 48px;
-          height: 48px;
-          color: var(--text-color, #374151);
-          cursor: pointer;
-          transition: color 0.2s ease;
-        }
-
-        .toc-sidebar.expanded .toc-icon {
-          display: none;
-        }
-
-        .toc-icon:hover {
-          color: var(--primary-color, #0066cc);
-        }
-
-        .toc-content {
-          display: flex;
-          flex-direction: column;
-          opacity: 0;
-          visibility: hidden;
-          transition: opacity 0.3s ease, visibility 0.3s ease;
-          height: 100%;
-        }
-
-        .toc-sidebar.expanded .toc-content {
+        .notion-toc-container.hovered .notion-toc-panel {
           opacity: 1;
           visibility: visible;
+          transform: translateX(0);
         }
 
-        .toc-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 16px;
-          border-bottom: 1px solid var(--border-color, #e0e0e0);
+        .notion-toc-header {
+          padding: 12px 16px;
+          border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+          font-size: 14px;
+          font-weight: 600;
+          color: rgba(55, 53, 47, 0.8);
           flex-shrink: 0;
         }
 
-        .toc-title {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--text-color, #111827);
-        }
-
-        .toc-nav {
+        .notion-toc-content {
           flex: 1;
           overflow-y: auto;
-          padding: 8px 0 16px;
+          overflow-x: hidden;
+          padding: 4px 0;
         }
 
-        .toc-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-        }
-
-        .toc-item {
-          margin: 2px 0;
-          transition: all 0.2s ease;
-        }
-
-        .toc-item a {
-          display: block;
-          color: var(--text-secondary, #6b7280);
-          text-decoration: none;
+        .notion-toc-item {
+          padding: 6px 16px 6px 12px;
           font-size: 13px;
-          line-height: 1.5;
-          padding: 6px 16px 6px 8px;
-          border-radius: 4px;
+          color: rgba(55, 53, 47, 0.65);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.15s ease;
+          line-height: 1.5;
+          border-left: 2px solid transparent;
+        }
+
+        .notion-toc-item:hover {
+          background: rgba(55, 53, 47, 0.04);
+          color: rgba(55, 53, 47, 0.9);
+        }
+
+        .notion-toc-item.active {
+          color: rgb(35, 131, 226);
+          background: rgba(35, 131, 226, 0.08);
+          border-left-color: rgb(35, 131, 226);
+          font-weight: 500;
+        }
+
+        .notion-toc-item.level-1 {
+          font-weight: 500;
+        }
+
+        .notion-toc-item.level-2 {
+          font-size: 12.5px;
+        }
+
+        .notion-toc-item.level-3 {
+          font-size: 12px;
+          color: rgba(55, 53, 47, 0.5);
+        }
+
+        .notion-toc-text {
+          display: block;
+          white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          word-wrap: break-word;
-          white-space: normal;
-          max-width: 100%;
         }
 
-        .toc-item a:hover {
-          background: var(--hover-bg, #f3f4f6);
-          color: var(--text-color, #111827);
-        }
-
-        .toc-item.active a {
-          color: var(--primary-color, #0066cc);
-          font-weight: 500;
-          background: var(--active-bg, #eff6ff);
-          border-left: 3px solid var(--primary-color, #0066cc);
-          padding-left: 5px;
-        }
-
-        .toc-level-1 a {
-          font-weight: 500;
-        }
-
-        .toc-level-2 a {
-          font-size: 12px;
-        }
-
-        .toc-level-3 a {
-          font-size: 11px;
-          color: var(--text-light, #9ca3af);
-        }
-
-        /* Custom scrollbar */
-        .toc-nav::-webkit-scrollbar {
+        /* Custom scrollbar cho panel */
+        .notion-toc-content::-webkit-scrollbar {
           width: 6px;
         }
 
-        .toc-nav::-webkit-scrollbar-track {
+        .notion-toc-content::-webkit-scrollbar-track {
           background: transparent;
-          margin: 4px 0;
         }
 
-        .toc-nav::-webkit-scrollbar-thumb {
-          background: var(--border-color, #e0e0e0);
+        .notion-toc-content::-webkit-scrollbar-thumb {
+          background: rgba(55, 53, 47, 0.2);
           border-radius: 3px;
         }
 
-        .toc-nav::-webkit-scrollbar-thumb:hover {
-          background: var(--text-secondary, #6b7280);
+        .notion-toc-content::-webkit-scrollbar-thumb:hover {
+          background: rgba(55, 53, 47, 0.3);
         }
 
         /* Dark mode */
         @media (prefers-color-scheme: dark) {
-          .toc-sidebar {
-            --bg-color: #1f2937;
-            --border-color: #374151;
-            --text-color: #f9fafb;
-            --text-secondary: #9ca3af;
-            --text-light: #6b7280;
-            --hover-bg: #374151;
-            --active-bg: #1e3a5f;
-            --primary-color: #60a5fa;
+          .notion-toc-bar {
+            background: rgba(255, 255, 255, 0.3);
+          }
+
+          .notion-toc-bar.active {
+            background: rgba(82, 156, 202, 0.9);
+          }
+
+          .notion-toc-panel {
+            background: #2f3437;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          }
+
+          .notion-toc-header {
+            color: rgba(255, 255, 255, 0.9);
+            border-bottom-color: rgba(255, 255, 255, 0.09);
+          }
+
+          .notion-toc-item {
+            color: rgba(255, 255, 255, 0.65);
+          }
+
+          .notion-toc-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.9);
+          }
+
+          .notion-toc-item.active {
+            color: rgb(82, 156, 202);
+            background: rgba(82, 156, 202, 0.15);
+            border-left-color: rgb(82, 156, 202);
+          }
+
+          .notion-toc-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+          }
+
+          .notion-toc-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
           }
         }
 
-        [data-theme='dark'] .toc-sidebar {
-          --bg-color: #1f2937;
-          --border-color: #374151;
-          --text-color: #f9fafb;
-          --text-secondary: #9ca3af;
-          --text-light: #6b7280;
-          --hover-bg: #374151;
-          --active-bg: #1e3a5f;
-          --primary-color: #60a5fa;
+        [data-theme='dark'] .notion-toc-bar {
+          background: rgba(255, 255, 255, 0.3);
         }
 
-        /* Mobile: Ẩn sidebar */
+        [data-theme='dark'] .notion-toc-bar.active {
+          background: rgba(82, 156, 202, 0.9);
+        }
+
+        [data-theme='dark'] .notion-toc-panel {
+          background: #2f3437;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme='dark'] .notion-toc-header {
+          color: rgba(255, 255, 255, 0.9);
+          border-bottom-color: rgba(255, 255, 255, 0.09);
+        }
+
+        [data-theme='dark'] .notion-toc-item {
+          color: rgba(255, 255, 255, 0.65);
+        }
+
+        [data-theme='dark'] .notion-toc-item:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(255, 255, 255, 0.9);
+        }
+
+        [data-theme='dark'] .notion-toc-item.active {
+          color: rgb(82, 156, 202);
+          background: rgba(82, 156, 202, 0.15);
+          border-left-color: rgb(82, 156, 202);
+        }
+
+        /* Mobile: Ẩn hoàn toàn */
         @media (max-width: 1024px) {
-          .toc-sidebar {
+          .notion-toc-container {
             display: none;
-          }
-        }
-
-        /* Tablet/Desktop: Hiển thị */
-        @media (min-width: 1024px) {
-          .toc-sidebar {
-            display: block;
           }
         }
       `}</style>
