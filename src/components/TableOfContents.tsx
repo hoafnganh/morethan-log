@@ -7,10 +7,10 @@ interface TocItem {
 }
 
 interface TableOfContentsProps {
-  recordMap: any; // ĐỔI TÊN TỪ blockMap THÀNH recordMap
+  recordMap: any;
 }
 
-const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // ĐỔI TÊN
+const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
   const [toc, setToc] = useState<TocItem[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -19,10 +19,10 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
     const extractHeadings = () => {
       const headings: TocItem[] = [];
       
-      if (!recordMap?.block) return headings; // ĐỔI TÊN
+      if (!recordMap?.block) return headings;
 
-      Object.keys(recordMap.block).forEach((key) => { // ĐỔI TÊN
-        const block = recordMap.block[key]?.value; // ĐỔI TÊN
+      Object.keys(recordMap.block).forEach((key) => {
+        const block = recordMap.block[key]?.value;
         if (!block) return;
 
         const type = block.type;
@@ -43,17 +43,20 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
     };
 
     setToc(extractHeadings());
-  }, [recordMap]); // ĐỔI TÊN
+  }, [recordMap]);
 
   useEffect(() => {
     const handleScroll = () => {
       const headingElements = toc.map(item => {
-        return document.getElementById(item.id);
+        // Thử nhiều cách tìm element
+        return document.querySelector(`[data-block-id="${item.id}"]`) ||
+               document.getElementById(item.id) ||
+               document.querySelector(`#block-${item.id}`);
       }).filter(el => el !== null);
 
       for (let i = headingElements.length - 1; i >= 0; i--) {
         const element = headingElements[i];
-        if (element && element.getBoundingClientRect().top <= 100) {
+        if (element && element.getBoundingClientRect().top <= 150) {
           setActiveId(toc[i].id);
           break;
         }
@@ -65,9 +68,19 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
   }, [toc]);
 
   const scrollToHeading = (id: string) => {
-    const element = document.getElementById(id);
+    // Thử nhiều cách tìm element
+    const element = document.querySelector(`[data-block-id="${id}"]`) ||
+                   document.getElementById(id) ||
+                   document.querySelector(`#block-${id}`) ||
+                   document.querySelector(`.notion-block-${id}`);
+    
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const yOffset = -80; // Offset để không bị che bởi header
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    } else {
+      console.log('Element not found for ID:', id);
     }
   };
 
@@ -108,6 +121,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
                     scrollToHeading(item.id);
                   }}
                   href={`#${item.id}`}
+                  title={item.text}
                 >
                   {item.text}
                 </a>
@@ -124,7 +138,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
           right: 0;
           transform: translateY(-50%);
           width: 48px;
-          max-height: 80vh;
+          max-height: calc(100vh - 120px);
           background: var(--bg-color, #ffffff);
           border: 1px solid var(--border-color, #e0e0e0);
           border-right: none;
@@ -136,7 +150,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
         }
 
         .toc-sidebar.expanded {
-          width: 280px;
+          width: 300px;
           box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
         }
 
@@ -160,12 +174,12 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
         }
 
         .toc-content {
+          display: flex;
+          flex-direction: column;
           opacity: 0;
           visibility: hidden;
           transition: opacity 0.3s ease, visibility 0.3s ease;
-          padding: 16px 0;
-          max-height: 100%;
-          overflow-y: auto;
+          height: 100%;
         }
 
         .toc-sidebar.expanded .toc-content {
@@ -177,15 +191,21 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 0 16px 12px;
+          padding: 16px;
           border-bottom: 1px solid var(--border-color, #e0e0e0);
-          margin-bottom: 8px;
+          flex-shrink: 0;
         }
 
         .toc-title {
           font-size: 14px;
           font-weight: 600;
           color: var(--text-color, #111827);
+        }
+
+        .toc-nav {
+          flex: 1;
+          overflow-y: auto;
+          padding: 8px 0 16px;
         }
 
         .toc-list {
@@ -204,14 +224,16 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
           color: var(--text-secondary, #6b7280);
           text-decoration: none;
           font-size: 13px;
-          line-height: 1.4;
+          line-height: 1.5;
           padding: 6px 16px 6px 8px;
           border-radius: 4px;
           cursor: pointer;
           transition: all 0.2s ease;
-          white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          word-wrap: break-word;
+          white-space: normal;
+          max-width: 100%;
         }
 
         .toc-item a:hover {
@@ -237,23 +259,25 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
 
         .toc-level-3 a {
           font-size: 11px;
+          color: var(--text-light, #9ca3af);
         }
 
         /* Custom scrollbar */
-        .toc-content::-webkit-scrollbar {
-          width: 4px;
+        .toc-nav::-webkit-scrollbar {
+          width: 6px;
         }
 
-        .toc-content::-webkit-scrollbar-track {
+        .toc-nav::-webkit-scrollbar-track {
           background: transparent;
+          margin: 4px 0;
         }
 
-        .toc-content::-webkit-scrollbar-thumb {
+        .toc-nav::-webkit-scrollbar-thumb {
           background: var(--border-color, #e0e0e0);
-          border-radius: 4px;
+          border-radius: 3px;
         }
 
-        .toc-content::-webkit-scrollbar-thumb:hover {
+        .toc-nav::-webkit-scrollbar-thumb:hover {
           background: var(--text-secondary, #6b7280);
         }
 
@@ -264,6 +288,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
             --border-color: #374151;
             --text-color: #f9fafb;
             --text-secondary: #9ca3af;
+            --text-light: #6b7280;
             --hover-bg: #374151;
             --active-bg: #1e3a5f;
             --primary-color: #60a5fa;
@@ -275,6 +300,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
           --border-color: #374151;
           --text-color: #f9fafb;
           --text-secondary: #9ca3af;
+          --text-light: #6b7280;
           --hover-bg: #374151;
           --active-bg: #1e3a5f;
           --primary-color: #60a5fa;
@@ -291,6 +317,13 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => { // 
         @media (min-width: 1024px) {
           .toc-sidebar {
             display: block;
+          }
+        }
+
+        /* Đảm bảo không bị che bởi footer */
+        @media (min-width: 1024px) {
+          .toc-sidebar {
+            margin-bottom: 60px;
           }
         }
       `}</style>
