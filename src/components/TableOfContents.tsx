@@ -30,13 +30,12 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
         if (['header', 'sub_header', 'sub_sub_header'].includes(type)) {
           const level = type === 'header' ? 1 : type === 'sub_header' ? 2 : 3;
           
-          // Parse text từ properties - hỗ trợ cả plain text và code
           let text = '';
           if (block.properties?.title) {
             text = block.properties.title
               .map((item: any) => {
                 if (Array.isArray(item)) {
-                  return item[0]; // Plain text
+                  return item[0];
                 }
                 return '';
               })
@@ -61,17 +60,17 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
 
   useEffect(() => {
     const handleScroll = () => {
+      if (toc.length === 0) return;
+
+      // Tìm heading bằng class pattern
       const headingElements: Array<{ id: string; top: number }> = [];
       
       toc.forEach(item => {
-        // Thử nhiều cách tìm element
-        const element = 
-          document.querySelector(`[data-block-id="${item.id}"]`) ||
-          document.querySelector(`.notion-block-${item.id}`) ||
-          document.getElementById(item.id);
-          
-        if (element) {
-          const rect = element.getBoundingClientRect();
+        // Tìm heading element bằng class chứa block ID
+        const heading = document.querySelector(`.notion-block-${item.id}`);
+        
+        if (heading) {
+          const rect = heading.getBoundingClientRect();
           headingElements.push({
             id: item.id,
             top: rect.top + window.scrollY
@@ -103,29 +102,28 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Scrolling to:', id); // Debug
+    console.log('Scrolling to block ID:', id);
     
-    // Thử nhiều cách tìm element
-    const element = 
-      document.querySelector(`[data-block-id="${id}"]`) ||
-      document.querySelector(`.notion-block-${id}`) ||
-      document.getElementById(id);
+    // Tìm heading element bằng class chứa block ID
+    const heading = document.querySelector(`.notion-block-${id}`) as HTMLElement;
     
-    console.log('Found element:', element); // Debug
+    console.log('Found element:', heading);
     
-    if (element) {
-      const yOffset = -80;
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+    if (heading) {
+      const yOffset = -100;
+      const y = heading.getBoundingClientRect().top + window.pageYOffset + yOffset;
       
       window.scrollTo({ top: y, behavior: 'smooth' });
       
       // Visual feedback
-      element.classList.add('toc-flash');
+      heading.classList.add('toc-flash');
       setTimeout(() => {
-        element.classList.remove('toc-flash');
+        heading.classList.remove('toc-flash');
       }, 1500);
+      
+      console.log('Scrolled successfully!');
     } else {
-      console.error('Element not found for id:', id);
+      console.error('Heading element not found for ID:', id);
     }
   };
 
@@ -138,7 +136,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Icon bars - hiển thị khi không hover */}
         <div className="notion-toc-bars">
           {toc.slice(0, 15).map((item) => (
             <div 
@@ -153,38 +150,37 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           {toc.length > 15 && <div className="notion-toc-bar-more">•••</div>}
         </div>
 
-        {/* Panel mục lục - hiển thị khi hover */}
         <div className="notion-toc-panel">
           <div className="notion-toc-header">
             <span>Mục lục</span>
           </div>
           <div className="notion-toc-content">
             {toc.map((item) => (
-              <div
+              <button
                 key={item.id}
                 className={`notion-toc-item ${activeId === item.id ? 'active' : ''} level-${item.level}`}
                 onClick={(e) => scrollToHeading(e, item.id)}
-                onMouseDown={(e) => e.preventDefault()}
+                type="button"
                 style={{
                   paddingLeft: `${(item.level - 1) * 16 + 12}px`
                 }}
               >
                 <span className="notion-toc-text">{item.text}</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
       </div>
 
       <style jsx global>{`
-        /* Flash animation khi click */
         @keyframes toc-flash {
           0%, 100% { background-color: transparent; }
-          50% { background-color: rgba(59, 130, 246, 0.2); }
+          50% { background-color: rgba(59, 130, 246, 0.3); }
         }
 
         .toc-flash {
           animation: toc-flash 1.5s ease;
+          border-radius: 4px;
         }
 
         .notion-toc-container {
@@ -193,10 +189,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           right: 20px;
           transform: translateY(-50%);
           z-index: 1000;
-          pointer-events: auto;
         }
 
-        /* Bars - mặc định - RÕ MÀU HƠN */
         .notion-toc-bars {
           display: flex;
           flex-direction: column;
@@ -247,7 +241,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           padding-right: 2px;
         }
 
-        /* Panel - khi hover */
         .notion-toc-panel {
           position: absolute;
           top: 0;
@@ -266,14 +259,12 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          pointer-events: auto;
         }
 
         .notion-toc-container.hovered .notion-toc-panel {
           opacity: 1;
           visibility: visible;
           transform: translateX(0);
-          pointer-events: auto;
         }
 
         .notion-toc-header {
@@ -294,17 +285,19 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
         }
 
         .notion-toc-item {
+          display: block;
+          width: 100%;
           padding: 8px 18px 8px 12px;
           font-size: 13px;
           color: #4a5568;
+          background: none;
+          border: none;
+          border-left: 3px solid transparent;
           cursor: pointer;
           transition: all 0.15s ease;
           line-height: 1.6;
-          border-left: 3px solid transparent;
-          user-select: none;
-          -webkit-user-select: none;
-          -moz-user-select: none;
-          -ms-user-select: none;
+          text-align: left;
+          font-family: inherit;
         }
 
         .notion-toc-item:hover {
@@ -343,10 +336,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          pointer-events: none;
         }
 
-        /* Custom scrollbar cho panel */
         .notion-toc-content::-webkit-scrollbar {
           width: 8px;
         }
@@ -365,7 +356,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           background: rgba(0, 0, 0, 0.3);
         }
 
-        /* Dark mode - RÕ MÀU HƠN */
         @media (prefers-color-scheme: dark) {
           .notion-toc-bars {
             background: rgba(255, 255, 255, 0.1);
@@ -378,18 +368,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           .notion-toc-bar.active {
             background: rgb(96, 165, 250);
             box-shadow: 0 0 6px rgba(96, 165, 250, 0.5);
-          }
-
-          .notion-toc-bar.level-1 {
-            background: rgba(220, 220, 220, 0.7);
-          }
-
-          .notion-toc-bar.level-2 {
-            background: rgba(200, 200, 200, 0.6);
-          }
-
-          .notion-toc-bar.level-3 {
-            background: rgba(180, 180, 180, 0.5);
           }
 
           .notion-toc-panel {
@@ -430,18 +408,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           .notion-toc-item.level-3 {
             color: #a0aec0;
           }
-
-          .notion-toc-content::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-          }
-
-          .notion-toc-content::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-          }
-
-          .notion-toc-content::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.3);
-          }
         }
 
         [data-theme='dark'] .notion-toc-bars {
@@ -454,18 +420,15 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
 
         [data-theme='dark'] .notion-toc-bar.active {
           background: rgb(96, 165, 250);
-          box-shadow: 0 0 6px rgba(96, 165, 250, 0.5);
         }
 
         [data-theme='dark'] .notion-toc-panel {
           background: rgba(30, 35, 40, 0.98);
           border-color: rgba(255, 255, 255, 0.1);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
         }
 
         [data-theme='dark'] .notion-toc-header {
           color: #f7fafc;
-          border-bottom-color: rgba(255, 255, 255, 0.1);
           background: rgba(40, 45, 50, 0.8);
         }
 
@@ -484,19 +447,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           border-left-color: rgb(96, 165, 250);
         }
 
-        [data-theme='dark'] .notion-toc-item.level-1 {
-          color: #e2e8f0;
-        }
-
-        [data-theme='dark'] .notion-toc-item.level-2 {
-          color: #cbd5e0;
-        }
-
-        [data-theme='dark'] .notion-toc-item.level-3 {
-          color: #a0aec0;
-        }
-
-        /* Mobile: Ẩn hoàn toàn */
         @media (max-width: 1024px) {
           .notion-toc-container {
             display: none;
