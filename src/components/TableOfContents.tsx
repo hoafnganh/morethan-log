@@ -231,7 +231,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           top: 0;
           right: 0;
           width: 320px;
-          max-height: calc(100vh - 60px);
+          max-height: calc(100vh - 40px);
           background: rgba(255, 255, 255, 0.98);
           backdrop-filter: blur(20px) saturate(180%);
           border: 1px solid rgba(0, 0, 0, 0.08);
