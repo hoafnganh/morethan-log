@@ -12,47 +12,6 @@ import { queryKey } from "src/constants/queryKey"
 import { dehydrate } from "@tanstack/react-query"
 import usePostQuery from "src/hooks/usePostQuery"
 import { FilterPostsOptions } from "src/libs/utils/notion/filterPosts"
-import TableOfContents from "src/components/TableOfContents"
-import { NotionRenderer } from 'react-notion-x';
-
-// Trong component render post
-const PostPage = ({ recordMap }) => {
-  return (
-    <div>
-      {/* Thêm TOC trước NotionRenderer */}
-      <TableOfContents blockMap={recordMap} />
-
-      <NotionRenderer
-        recordMap={recordMap}
-        fullPage={false}
-        darkMode={false}
-      />
-    </div>
-  );
-};
-const TableOfContentsSidebar = ({ blockMap }: { blockMap: any }) => {
-  // ... (logic tương tự component trên)
-  
-  return (
-  return (
-    <aside className="toc-sidebar">
-      {/* Nội dung TOC */}
-      
-      <style jsx>{`
-        .toc-sidebar {
-          position: sticky;
-          top: 80px;
-          max-height: calc(100vh - 100px);
-          overflow-y: auto;
-          padding: 20px;
-        }
-      `}</style>
-    </aside>
-  );
-};
-
-
-
 
 const filter: FilterPostsOptions = {
   acceptStatus: ["Public", "PublicOnDetail"],
@@ -127,5 +86,3 @@ DetailPage.getLayout = (page) => {
 }
 
 export default DetailPage
-
-
