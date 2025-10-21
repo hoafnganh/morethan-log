@@ -1,4 +1,12 @@
 const CONFIG = {
+  tableOfContents: {
+    enable: true, // Bật/tắt TOC
+    position: 'top', // 'top' | 'sidebar' - vị trí hiển thị
+    showH1: true, // Hiển thị H1
+    showH2: true, // Hiển thị H2
+    showH3: true, // Hiển thị H3
+    title: 'Mục lục', // Tiêu đề TOC
+  },
   // profile setting (required)
   profile: {
     name: "hoafnganh",
@@ -71,5 +79,6 @@ const CONFIG = {
   isProd: process.env.VERCEL_ENV === "production", // distinguish between development and production environment (ref: https://vercel.com/docs/environment-variables#system-environment-variables)
   revalidateTime: 21600 * 3, // revalidate time for [slug], index
 }
+
 
 module.exports = { CONFIG }
