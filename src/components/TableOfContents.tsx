@@ -47,91 +47,125 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const headingElements = toc.map(item => {
-        // Thử nhiều cách tìm element
-        return document.querySelector(`[data-block-id="${item.id}"]`) ||
-               document.getElementById(item.id) ||
-               document.querySelector(`#block-${item.id}`);
-      }).filter(el => el !== null);
-
-      for (let i = headingElements.length - 1; i >= 0; i--) {
-        const element = headingElements[i];
-        if (element && element.getBoundingClientRect().top <= 150) {
-          setActiveId(toc[i].id);
-          break;
+      // Tìm tất cả các heading elements
+      const headingElements: Array<{ id: string; element: Element; top: number }> = [];
+      
+      toc.forEach(item => {
+        // react-notion-x render blocks với class .notion-block-{id}
+        const element = document.querySelector(`.notion-block-${item.id}`);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          headingElements.push({
+            id: item.id,
+            element: element,
+            top: rect.top + window.scrollY
+          });
         }
+      });
+
+      // Tìm heading gần nhất đang được view
+      const scrollPosition = window.scrollY + 150;
+      
+      for (let i = headingElements.length - 1; i >= 0; i--) {
+        if (scrollPosition >= headingElements[i].top) {
+          setActiveId(headingElements[i].id);
+          return;
+        }
+      }
+      
+      if (headingElements.length > 0) {
+        setActiveId(headingElements[0].id);
       }
     };
 
     window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Call once to set initial active
+    
     return () => window.removeEventListener('scroll', handleScroll);
   }, [toc]);
 
   const scrollToHeading = (id: string) => {
-    // Thử nhiều cách tìm element
-    const element = document.querySelector(`[data-block-id="${id}"]`) ||
-                   document.getElementById(id) ||
-                   document.querySelector(`#block-${id}`) ||
-                   document.querySelector(`.notion-block-${id}`);
+    // react-notion-x sử dụng class .notion-block-{id} cho mỗi block
+    const element = document.querySelector(`.notion-block-${id}`);
     
     if (element) {
-      const yOffset = -80; // Offset để không bị che bởi header
+      const yOffset = -100; // Offset để không bị header che
       const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       
       window.scrollTo({ top: y, behavior: 'smooth' });
-    } else {
-      console.log('Element not found for ID:', id);
+      
+      // Highlight animation
+      element.classList.add('toc-highlight');
+      setTimeout(() => {
+        element.classList.remove('toc-highlight');
+      }, 2000);
     }
   };
 
   if (toc.length === 0) return null;
 
   return (
-    <div 
-      className={`toc-sidebar ${isExpanded ? 'expanded' : ''}`}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
-    >
-      <div className="toc-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 4h18M3 12h18M3 20h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-      </div>
-      
-      <div className="toc-content">
-        <div className="toc-header">
+    <>
+      <div 
+        className={`toc-sidebar ${isExpanded ? 'expanded' : ''}`}
+        onMouseEnter={() => setIsExpanded(true)}
+        onMouseLeave={() => setIsExpanded(false)}
+      >
+        <div className="toc-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M3 4h18M3 12h18M3 20h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>
-          <span className="toc-title">Mục lục</span>
         </div>
-        <nav className="toc-nav">
-          <ul className="toc-list">
-            {toc.map((item) => (
-              <li
-                key={item.id}
-                className={`toc-item toc-level-${item.level} ${
-                  activeId === item.id ? 'active' : ''
-                }`}
-                style={{ paddingLeft: `${(item.level - 1) * 12 + 8}px` }}
-              >
-                <a
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToHeading(item.id);
-                  }}
-                  href={`#${item.id}`}
-                  title={item.text}
+        
+        <div className="toc-content">
+          <div className="toc-header">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 4h18M3 12h18M3 20h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span className="toc-title">Mục lục</span>
+          </div>
+          <nav className="toc-nav">
+            <ul className="toc-list">
+              {toc.map((item) => (
+                <li
+                  key={item.id}
+                  className={`toc-item toc-level-${item.level} ${
+                    activeId === item.id ? 'active' : ''
+                  }`}
+                  style={{ paddingLeft: `${(item.level - 1) * 12 + 8}px` }}
                 >
-                  {item.text}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+                  <a
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToHeading(item.id);
+                    }}
+                    href={`#${item.id}`}
+                    title={item.text}
+                  >
+                    {item.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
+        /* Highlight animation khi click vào TOC */
+        .toc-highlight {
+          animation: toc-flash 2s ease;
+        }
+
+        @keyframes toc-flash {
+          0%, 100% {
+            background-color: transparent;
+          }
+          50% {
+            background-color: rgba(59, 130, 246, 0.2);
+          }
+        }
+
         .toc-sidebar {
           position: fixed;
           top: 50%;
@@ -319,15 +353,8 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
             display: block;
           }
         }
-
-        /* Đảm bảo không bị che bởi footer */
-        @media (min-width: 1024px) {
-          .toc-sidebar {
-            margin-bottom: 60px;
-          }
-        }
       `}</style>
-    </div>
+    </>
   );
 };
 
