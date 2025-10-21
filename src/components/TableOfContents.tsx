@@ -44,7 +44,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           
           if (text) {
             headings.push({
-              id: key.replace(/-/g, ''), // LO ẠI BỎ DẤU GẠCH NGANG
+              id: key.replace(/-/g, ''),
               text,
               level
             });
@@ -100,11 +100,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Scrolling to block ID:', id);
-    
     const heading = document.querySelector(`.notion-block-${id}`) as HTMLElement;
-    
-    console.log('Found element:', heading);
     
     if (heading) {
       const yOffset = -100;
@@ -116,10 +112,6 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
       setTimeout(() => {
         heading.classList.remove('toc-flash');
       }, 1500);
-      
-      console.log('Scrolled successfully!');
-    } else {
-      console.error('Heading element not found for ID:', id);
     }
   };
 
@@ -138,7 +130,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
               key={item.id}
               className={`notion-toc-bar ${activeId === item.id ? 'active' : ''} level-${item.level}`}
               style={{
-                width: item.level === 1 ? '20px' : item.level === 2 ? '16px' : '12px'
+                width: item.level === 1 ? '24px' : item.level === 2 ? '18px' : '14px'
               }}
               title={item.text}
             />
@@ -148,7 +140,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
 
         <div className="notion-toc-panel">
           <div className="notion-toc-header">
-            <span>Mục lục</span>
+            <span>📖 Mục lục</span>
           </div>
           <div className="notion-toc-content">
             {toc.map((item) => (
@@ -158,7 +150,7 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
                 onClick={(e) => scrollToHeading(e, item.id)}
                 type="button"
                 style={{
-                  paddingLeft: `${(item.level - 1) * 16 + 12}px`
+                  paddingLeft: `${(item.level - 1) * 18 + 16}px`
                 }}
               >
                 <span className="notion-toc-text">{item.text}</span>
@@ -171,31 +163,33 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
       <style jsx global>{`
         @keyframes toc-flash {
           0%, 100% { background-color: transparent; }
-          50% { background-color: rgba(59, 130, 246, 0.3); }
+          50% { background-color: rgba(59, 130, 246, 0.25); }
         }
 
         .toc-flash {
           animation: toc-flash 1.5s ease;
-          border-radius: 4px;
+          border-radius: 6px;
         }
 
         .notion-toc-container {
           position: fixed;
           top: 50%;
-          right: 20px;
+          right: 24px;
           transform: translateY(-50%);
           z-index: 1000;
         }
 
+        /* Bars - đẹp hơn */
         .notion-toc-bars {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          padding: 10px 6px;
+          gap: 9px;
+          padding: 12px 8px;
           align-items: flex-end;
-          transition: opacity 0.2s ease;
-          background: rgba(0, 0, 0, 0.08);
-          border-radius: 6px;
+          transition: opacity 0.25s ease;
+          background: rgba(0, 0, 0, 0.06);
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .notion-toc-container.hovered .notion-toc-bars {
@@ -205,53 +199,50 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
 
         .notion-toc-bar {
           height: 3px;
-          background: rgba(100, 100, 100, 0.6);
+          background: linear-gradient(90deg, rgba(100, 100, 100, 0.5), rgba(100, 100, 100, 0.7));
           border-radius: 2px;
-          transition: all 0.2s ease;
+          transition: all 0.25s ease;
           cursor: pointer;
         }
 
         .notion-toc-bar.active {
-          background: rgb(35, 131, 226);
+          background: linear-gradient(90deg, rgb(59, 130, 246), rgb(37, 99, 235));
           height: 4px;
-          box-shadow: 0 0 4px rgba(35, 131, 226, 0.4);
+          box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
         }
 
-        .notion-toc-bar.level-1 {
-          background: rgba(100, 100, 100, 0.7);
-        }
-
-        .notion-toc-bar.level-2 {
-          background: rgba(100, 100, 100, 0.5);
-        }
-
-        .notion-toc-bar.level-3 {
-          background: rgba(100, 100, 100, 0.4);
+        .notion-toc-bar:hover {
+          transform: scaleX(1.1);
+          opacity: 0.9;
         }
 
         .notion-toc-bar-more {
-          font-size: 12px;
-          font-weight: bold;
-          color: rgba(100, 100, 100, 0.6);
+          font-size: 13px;
+          font-weight: 600;
+          color: rgba(100, 100, 100, 0.7);
           text-align: right;
-          padding-right: 2px;
+          padding-right: 3px;
+          letter-spacing: 2px;
         }
 
+        /* Panel - CAO HƠN + ĐẸP HƠN */
         .notion-toc-panel {
           position: absolute;
           top: 0;
           right: 0;
-          width: 300px;
-          max-height: calc(100vh - 100px);
+          width: 320px;
+          max-height: calc(100vh - 60px);
           background: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(0, 0, 0, 0.1);
-          border-radius: 10px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+          backdrop-filter: blur(20px) saturate(180%);
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 12px;
+          box-shadow: 
+            0 10px 40px rgba(0, 0, 0, 0.12),
+            0 4px 12px rgba(0, 0, 0, 0.08);
           opacity: 0;
           visibility: hidden;
           transform: translateX(20px);
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -264,67 +255,77 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
         }
 
         .notion-toc-header {
-          padding: 14px 18px;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-          font-size: 14px;
+          padding: 16px 20px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+          font-size: 15px;
           font-weight: 600;
-          color: #1a1a1a;
+          color: #1a202c;
           flex-shrink: 0;
-          background: rgba(248, 249, 250, 0.8);
+          background: linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(241, 245, 249, 0.8));
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Display", 
+                       Roboto, "Helvetica Neue", Arial, sans-serif;
+          letter-spacing: -0.02em;
         }
 
         .notion-toc-content {
           flex: 1;
           overflow-y: auto;
           overflow-x: hidden;
-          padding: 8px 0;
+          padding: 10px 0;
         }
 
         .notion-toc-item {
           display: block;
           width: 100%;
-          padding: 8px 18px 8px 12px;
-          font-size: 13px;
-          color: #4a5568;
+          padding: 10px 20px 10px 16px;
+          font-size: 14px;
+          color: #475569;
           background: none;
           border: none;
           border-left: 3px solid transparent;
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: all 0.2s ease;
           line-height: 1.6;
           text-align: left;
-          font-family: inherit;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text",
+                       Roboto, "Helvetica Neue", Arial, sans-serif;
+          letter-spacing: -0.01em;
         }
 
         .notion-toc-item:hover {
-          background: rgba(59, 130, 246, 0.08);
-          color: #1a202c;
+          background: linear-gradient(90deg, rgba(59, 130, 246, 0.06), rgba(59, 130, 246, 0.03));
+          color: #1e293b;
+          transform: translateX(2px);
         }
 
         .notion-toc-item:active {
-          background: rgba(59, 130, 246, 0.15);
+          background: linear-gradient(90deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.06));
+          transform: translateX(3px);
         }
 
         .notion-toc-item.active {
-          color: rgb(35, 131, 226);
-          background: rgba(35, 131, 226, 0.12);
-          border-left-color: rgb(35, 131, 226);
+          color: rgb(37, 99, 235);
+          background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.08));
+          border-left-color: rgb(59, 130, 246);
           font-weight: 600;
         }
 
         .notion-toc-item.level-1 {
           font-weight: 600;
-          color: #2d3748;
+          color: #1e293b;
+          font-size: 14.5px;
         }
 
         .notion-toc-item.level-2 {
-          font-size: 12.5px;
-          color: #4a5568;
+          font-size: 13.5px;
+          color: #475569;
+          font-weight: 500;
         }
 
         .notion-toc-item.level-3 {
-          font-size: 12px;
-          color: #718096;
+          font-size: 13px;
+          color: #64748b;
+          font-weight: 400;
         }
 
         .notion-toc-text {
@@ -334,48 +335,57 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           text-overflow: ellipsis;
         }
 
+        /* Custom scrollbar - ĐẸP HƠN */
         .notion-toc-content::-webkit-scrollbar {
           width: 8px;
         }
 
         .notion-toc-content::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.02);
+          background: rgba(0, 0, 0, 0.03);
           border-radius: 4px;
+          margin: 8px 0;
         }
 
         .notion-toc-content::-webkit-scrollbar-thumb {
-          background: rgba(0, 0, 0, 0.2);
+          background: linear-gradient(180deg, rgba(100, 116, 139, 0.3), rgba(100, 116, 139, 0.4));
           border-radius: 4px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
         }
 
         .notion-toc-content::-webkit-scrollbar-thumb:hover {
-          background: rgba(0, 0, 0, 0.3);
+          background: linear-gradient(180deg, rgba(100, 116, 139, 0.5), rgba(100, 116, 139, 0.6));
+          background-clip: padding-box;
         }
 
+        /* Dark mode - ĐẸP HƠN */
         @media (prefers-color-scheme: dark) {
           .notion-toc-bars {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
           }
 
           .notion-toc-bar {
-            background: rgba(200, 200, 200, 0.6);
+            background: linear-gradient(90deg, rgba(200, 200, 200, 0.5), rgba(220, 220, 220, 0.7));
           }
 
           .notion-toc-bar.active {
-            background: rgb(96, 165, 250);
-            box-shadow: 0 0 6px rgba(96, 165, 250, 0.5);
+            background: linear-gradient(90deg, rgb(96, 165, 250), rgb(59, 130, 246));
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.6);
           }
 
           .notion-toc-panel {
-            background: rgba(30, 35, 40, 0.98);
+            background: rgba(30, 35, 42, 0.98);
             border-color: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            box-shadow: 
+              0 10px 40px rgba(0, 0, 0, 0.6),
+              0 4px 12px rgba(0, 0, 0, 0.4);
           }
 
           .notion-toc-header {
-            color: #f7fafc;
-            border-bottom-color: rgba(255, 255, 255, 0.1);
-            background: rgba(40, 45, 50, 0.8);
+            color: #f1f5f9;
+            border-bottom-color: rgba(255, 255, 255, 0.08);
+            background: linear-gradient(180deg, rgba(45, 52, 64, 0.9), rgba(38, 45, 56, 0.8));
           }
 
           .notion-toc-item {
@@ -383,18 +393,18 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           }
 
           .notion-toc-item:hover {
-            background: rgba(96, 165, 250, 0.15);
-            color: #f7fafc;
+            background: linear-gradient(90deg, rgba(96, 165, 250, 0.12), rgba(96, 165, 250, 0.06));
+            color: #f1f5f9;
           }
 
           .notion-toc-item.active {
-            color: rgb(96, 165, 250);
-            background: rgba(96, 165, 250, 0.2);
+            color: rgb(125, 211, 252);
+            background: linear-gradient(90deg, rgba(96, 165, 250, 0.2), rgba(96, 165, 250, 0.12));
             border-left-color: rgb(96, 165, 250);
           }
 
           .notion-toc-item.level-1 {
-            color: #e2e8f0;
+            color: #f1f5f9;
           }
 
           .notion-toc-item.level-2 {
@@ -402,30 +412,42 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
           }
 
           .notion-toc-item.level-3 {
-            color: #a0aec0;
+            color: #94a3b8;
+          }
+
+          .notion-toc-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+          }
+
+          .notion-toc-content::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(148, 163, 184, 0.3), rgba(148, 163, 184, 0.4));
+          }
+
+          .notion-toc-content::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(148, 163, 184, 0.5), rgba(148, 163, 184, 0.6));
           }
         }
 
         [data-theme='dark'] .notion-toc-bars {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.08);
         }
 
         [data-theme='dark'] .notion-toc-bar {
-          background: rgba(200, 200, 200, 0.6);
+          background: linear-gradient(90deg, rgba(200, 200, 200, 0.5), rgba(220, 220, 220, 0.7));
         }
 
         [data-theme='dark'] .notion-toc-bar.active {
-          background: rgb(96, 165, 250);
+          background: linear-gradient(90deg, rgb(96, 165, 250), rgb(59, 130, 246));
         }
 
         [data-theme='dark'] .notion-toc-panel {
-          background: rgba(30, 35, 40, 0.98);
+          background: rgba(30, 35, 42, 0.98);
           border-color: rgba(255, 255, 255, 0.1);
         }
 
         [data-theme='dark'] .notion-toc-header {
-          color: #f7fafc;
-          background: rgba(40, 45, 50, 0.8);
+          color: #f1f5f9;
+          background: linear-gradient(180deg, rgba(45, 52, 64, 0.9), rgba(38, 45, 56, 0.8));
         }
 
         [data-theme='dark'] .notion-toc-item {
@@ -433,13 +455,13 @@ const TableOfContents: React.FC<TableOfContentsProps> = ({ recordMap }) => {
         }
 
         [data-theme='dark'] .notion-toc-item:hover {
-          background: rgba(96, 165, 250, 0.15);
-          color: #f7fafc;
+          background: linear-gradient(90deg, rgba(96, 165, 250, 0.12), rgba(96, 165, 250, 0.06));
+          color: #f1f5f9;
         }
 
         [data-theme='dark'] .notion-toc-item.active {
-          color: rgb(96, 165, 250);
-          background: rgba(96, 165, 250, 0.2);
+          color: rgb(125, 211, 252);
+          background: linear-gradient(90deg, rgba(96, 165, 250, 0.2), rgba(96, 165, 250, 0.12));
           border-left-color: rgb(96, 165, 250);
         }
 
