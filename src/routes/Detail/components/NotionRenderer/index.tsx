@@ -57,7 +57,7 @@ type Props = {
 const NotionRenderer: FC<Props> = ({ recordMap }) => {
   const [scheme] = useScheme()
   return (
-    <StyledWrapper>
+    <StyledWrapper scheme={scheme}>
       <_NotionRenderer
         darkMode={scheme === "dark"}
         recordMap={recordMap}
@@ -78,7 +78,7 @@ const NotionRenderer: FC<Props> = ({ recordMap }) => {
 
 export default NotionRenderer
 
-const StyledWrapper = styled.div`
+const StyledWrapper = styled.div<{ scheme: string }>`
   /* // TODO: why render? */
   .notion-collection-page-properties {
     display: none !important;
@@ -88,5 +88,17 @@ const StyledWrapper = styled.div`
   }
   .notion-list {
     width: 100%;
+  }
+
+  /* Custom inline code styling to match Notion */
+  .notion-inline-code {
+    color: ${props => props.scheme === "dark" ? "#ff7b72" : "#eb5757"};
+    background: ${props => props.scheme === "dark" ? "rgba(110, 118, 129, 0.4)" : "rgba(135, 131, 120, 0.15)"};
+    border-radius: 4px;
+    font-size: 85%;
+    padding: 0.2em 0.4em;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-weight: 400;
+    line-height: 1.4;
   }
 `
