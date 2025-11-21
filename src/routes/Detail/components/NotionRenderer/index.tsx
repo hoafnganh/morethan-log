@@ -172,13 +172,14 @@ const StyledWrapper = styled.div<{ scheme: string }>`
   /* Container của code block - Thêm cursor pointer để báo hiệu có thể click */
   .notion-code {
     border-radius: 8px;
-    overflow: hidden;
+    overflow: visible;  /* Thay đổi từ hidden sang visible để hint có thể hiện bên ngoài */
     margin: 1.5em 0;
     background: ${props => props.scheme === "dark" ? "#1e1e1e" : "#f6f8fa"} !important;
     border: 1px solid ${props => props.scheme === "dark" ? "#333" : "#e1e4e8"};
     position: relative;
-    cursor: pointer;  /* Thêm cursor pointer */
+    cursor: pointer;
     transition: all 0.2s ease;
+    padding-top: 32px;  /* Thêm padding top để tạo không gian cho hint */
   }
 
   /* Hover effect để người dùng biết có thể click */
@@ -205,7 +206,7 @@ const StyledWrapper = styled.div<{ scheme: string }>`
   /* Notification "Copied!" */
   .copy-notification {
     position: absolute;
-    top: 12px;
+    top: -40px;  /* Dịch lên trên cao hơn, ngoài code block */
     right: 12px;
     padding: 8px 12px;
     background: #10b981;
@@ -252,39 +253,42 @@ const StyledWrapper = styled.div<{ scheme: string }>`
     }
   }
 
-  /* Hint text "Click to copy" khi hover */
-  .notion-code::after {
+  /* Hint text "Click to copy" - DỊCH LÊN CAO HƠN */
+  .notion-code::before {
     content: "Click to copy";
     position: absolute;
-    top: 12px;
+    top: -28px;  /* Dịch lên trên, ngoài code block */
     right: 12px;
-    padding: 4px 8px;
-    background: ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)"};
-    border: 1px solid ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)"};
-    border-radius: 4px;
-    font-size: 11px;
-    color: ${props => props.scheme === "dark" ? "#888" : "#666"};
+    padding: 6px 10px;
+    background: ${props => props.scheme === "dark" ? "rgba(30, 30, 30, 0.95)" : "rgba(255, 255, 255, 0.95)"};
+    border: 1px solid ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.15)"};
+    border-radius: 6px;
+    font-size: 12px;
+    color: ${props => props.scheme === "dark" ? "#aaa" : "#666"};
     opacity: 0;
     transition: opacity 0.2s ease;
     pointer-events: none;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px ${props => props.scheme === "dark" ? "rgba(0, 0, 0, 0.4)" : "rgba(0, 0, 0, 0.1)"};
+    z-index: 10;
   }
 
-  .notion-code:hover::after {
+  .notion-code:hover::before {
     opacity: 1;
   }
 
   /* Ẩn hint khi đang hiển thị notification */
-  .notion-code:has(.copy-notification)::after {
+  .notion-code:has(.copy-notification)::before {
     display: none;
   }
 
-  /* Code pre container - Tăng line-height */
+  /* Code pre container */
   .notion-code pre {
     background: ${props => props.scheme === "dark" ? "#1e1e1e" : "#f6f8fa"} !important;
     padding: 20px !important;
     margin: 0 !important;
-    border-radius: 0 !important;
+    border-radius: 8px !important;  /* Giữ bo góc cho pre */
     overflow-x: auto !important;
     overflow-wrap: break-word !important;
     word-wrap: break-word !important;
