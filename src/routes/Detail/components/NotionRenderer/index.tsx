@@ -56,65 +56,69 @@ type Props = {
 const NotionRenderer: FC<Props> = ({ recordMap }) => {
   const [scheme] = useScheme()
 
-  // Thêm functionality cho nút copy
+  // Click vào code block để copy toàn bộ
   useEffect(() => {
-    const addCopyButtons = () => {
-      const codeBlocks = document.querySelectorAll('.notion-code')
+    const handleCodeBlockClick = async (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      const codeBlock = target.closest('.notion-code')
       
-      codeBlocks.forEach((block) => {
-        // Kiểm tra đã có nút copy chưa
-        if (block.querySelector('.custom-copy-button')) return
-
-        // Tạo nút copy
-        const copyButton = document.createElement('button')
-        copyButton.className = 'custom-copy-button'
-        copyButton.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M4 4v1h1V4h6v6h-1v1h1.5a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5zM3.5 6A.5.5 0 0 0 3 6.5v7a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7z"/>
-          </svg>
-        `
-        copyButton.setAttribute('aria-label', 'Copy code')
+      if (!codeBlock) return
+      
+      const codeElement = codeBlock.querySelector('code')
+      if (!codeElement) return
+      
+      const textToCopy = codeElement.textContent || ''
+      
+      try {
+        await navigator.clipboard.writeText(textToCopy)
         
-        // Xử lý sự kiện copy
-        copyButton.addEventListener('click', async () => {
-          const codeElement = block.querySelector('code')
-          if (!codeElement) return
-          
-          const textToCopy = codeElement.textContent || ''
-          
-          try {
-            await navigator.clipboard.writeText(textToCopy)
-            
-            // Thay đổi icon thành checkmark
-            copyButton.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
-              </svg>
-            `
-            copyButton.classList.add('copied')
-            
-            // Đổi lại sau 2 giây
-            setTimeout(() => {
-              copyButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M4 4v1h1V4h6v6h-1v1h1.5a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5zM3.5 6A.5.5 0 0 0 3 6.5v7a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7z"/>
-                </svg>
-              `
-              copyButton.classList.remove('copied')
-            }, 2000)
-          } catch (err) {
-            console.error('Failed to copy:', err)
-          }
-        })
+        // Hiển thị thông báo đã copy
+        showCopyNotification(codeBlock as HTMLElement)
         
-        block.appendChild(copyButton)
-      })
+        // Thêm effect khi copy
+        codeBlock.classList.add('copied-flash')
+        setTimeout(() => {
+          codeBlock.classList.remove('copied-flash')
+        }, 500)
+        
+      } catch (err) {
+        console.error('Failed to copy:', err)
+      }
     }
 
-    // Chạy sau khi component render
-    const timer = setTimeout(addCopyButtons, 100)
+    // Hàm hiển thị thông báo "Copied!"
+    const showCopyNotification = (codeBlock: HTMLElement) => {
+      // Xóa notification cũ nếu có
+      const oldNotification = codeBlock.querySelector('.copy-notification')
+      if (oldNotification) {
+        oldNotification.remove()
+      }
+
+      // Tạo notification mới
+      const notification = document.createElement('div')
+      notification.className = 'copy-notification'
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+        </svg>
+        <span>Copied!</span>
+      `
+      
+      codeBlock.appendChild(notification)
+      
+      // Tự động xóa sau 2 giây
+      setTimeout(() => {
+        notification.classList.add('fade-out')
+        setTimeout(() => notification.remove(), 300)
+      }, 2000)
+    }
+
+    // Thêm event listener
+    document.addEventListener('click', handleCodeBlockClick)
     
-    return () => clearTimeout(timer)
+    return () => {
+      document.removeEventListener('click', handleCodeBlockClick)
+    }
   }, [recordMap])
 
   return (
@@ -165,7 +169,7 @@ const StyledWrapper = styled.div<{ scheme: string }>`
 
   /* ===== CUSTOM CODE BLOCK STYLING ===== */
   
-  /* Container của code block */
+  /* Container của code block - Thêm cursor pointer để báo hiệu có thể click */
   .notion-code {
     border-radius: 8px;
     overflow: hidden;
@@ -173,12 +177,112 @@ const StyledWrapper = styled.div<{ scheme: string }>`
     background: ${props => props.scheme === "dark" ? "#1e1e1e" : "#f6f8fa"} !important;
     border: 1px solid ${props => props.scheme === "dark" ? "#333" : "#e1e4e8"};
     position: relative;
+    cursor: pointer;  /* Thêm cursor pointer */
+    transition: all 0.2s ease;
+  }
+
+  /* Hover effect để người dùng biết có thể click */
+  .notion-code:hover {
+    border-color: ${props => props.scheme === "dark" ? "#4493f8" : "#0969da"};
+    box-shadow: 0 0 0 3px ${props => props.scheme === "dark" ? "rgba(68, 147, 248, 0.15)" : "rgba(9, 105, 218, 0.1)"};
+  }
+
+  /* Effect khi copy thành công */
+  .notion-code.copied-flash {
+    animation: flash-border 0.5s ease;
+  }
+
+  @keyframes flash-border {
+    0%, 100% {
+      border-color: ${props => props.scheme === "dark" ? "#333" : "#e1e4e8"};
+    }
+    50% {
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+  }
+
+  /* Notification "Copied!" */
+  .copy-notification {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 8px 12px;
+    background: #10b981;
+    color: white;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 100;
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+
+  .copy-notification svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .copy-notification.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+
+  /* Hint text "Click to copy" khi hover */
+  .notion-code::after {
+    content: "Click to copy";
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 4px 8px;
+    background: ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)"};
+    border: 1px solid ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)"};
+    border-radius: 4px;
+    font-size: 11px;
+    color: ${props => props.scheme === "dark" ? "#888" : "#666"};
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  .notion-code:hover::after {
+    opacity: 1;
+  }
+
+  /* Ẩn hint khi đang hiển thị notification */
+  .notion-code:has(.copy-notification)::after {
+    display: none;
   }
 
   /* Code pre container - Tăng line-height */
   .notion-code pre {
     background: ${props => props.scheme === "dark" ? "#1e1e1e" : "#f6f8fa"} !important;
-    padding: 20px !important;  /* Tăng padding */
+    padding: 20px !important;
     margin: 0 !important;
     border-radius: 0 !important;
     overflow-x: auto !important;
@@ -198,53 +302,12 @@ const StyledWrapper = styled.div<{ scheme: string }>`
   .notion-code code {
     color: ${props => props.scheme === "dark" ? "#d4d4d4" : "#24292e"} !important;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
-    font-size: 14px !important;  /* Tăng size lên 14px */
-    line-height: 1.8 !important;  /* Tăng line-height lên 1.8 */
+    font-size: 14px !important;
+    line-height: 1.8 !important;
     white-space: pre-wrap !important;
     word-wrap: break-word !important;
     word-break: break-all !important;
     display: block !important;
-  }
-
-  /* Custom copy button (HOẠT ĐỘNG ĐƯỢC) */
-  .custom-copy-button {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    padding: 6px 8px;
-    background: ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)"};
-    border: 1px solid ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)"};
-    border-radius: 6px;
-    cursor: pointer;
-    color: ${props => props.scheme === "dark" ? "#cccccc" : "#586069"};
-    transition: all 0.2s ease;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.7;
-  }
-
-  .custom-copy-button:hover {
-    opacity: 1;
-    background: ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"};
-    transform: translateY(-1px);
-  }
-
-  .custom-copy-button:active {
-    transform: translateY(0);
-  }
-
-  .custom-copy-button.copied {
-    color: #10b981;
-    border-color: #10b981;
-    background: ${props => props.scheme === "dark" ? "rgba(16, 185, 129, 0.1)" : "rgba(16, 185, 129, 0.1)"};
-  }
-
-  /* Icon trong button */
-  .custom-copy-button svg {
-    width: 16px;
-    height: 16px;
   }
 
   /* Scrollbar styling */
