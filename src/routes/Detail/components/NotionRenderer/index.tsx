@@ -3,6 +3,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { ExtendedRecordMap } from "notion-types"
 import useScheme from "src/hooks/useScheme"
+import { FC, useEffect } from "react"
+import styled from "@emotion/styled"
 
 // core styles shared by all of react-notion-x (required)
 import "react-notion-x/src/styles.css"
@@ -11,10 +13,7 @@ import "react-notion-x/src/styles.css"
 import "prismjs/themes/prism-tomorrow.css"
 
 // used for rendering equations (optional)
-
 import "katex/dist/katex.min.css"
-import { FC } from "react"
-import styled from "@emotion/styled"
 
 const _NotionRenderer = dynamic(
   () => import("react-notion-x").then((m) => m.NotionRenderer),
@@ -56,6 +55,68 @@ type Props = {
 
 const NotionRenderer: FC<Props> = ({ recordMap }) => {
   const [scheme] = useScheme()
+
+  // Thêm functionality cho nút copy
+  useEffect(() => {
+    const addCopyButtons = () => {
+      const codeBlocks = document.querySelectorAll('.notion-code')
+      
+      codeBlocks.forEach((block) => {
+        // Kiểm tra đã có nút copy chưa
+        if (block.querySelector('.custom-copy-button')) return
+
+        // Tạo nút copy
+        const copyButton = document.createElement('button')
+        copyButton.className = 'custom-copy-button'
+        copyButton.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4 4v1h1V4h6v6h-1v1h1.5a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5zM3.5 6A.5.5 0 0 0 3 6.5v7a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7z"/>
+          </svg>
+        `
+        copyButton.setAttribute('aria-label', 'Copy code')
+        
+        // Xử lý sự kiện copy
+        copyButton.addEventListener('click', async () => {
+          const codeElement = block.querySelector('code')
+          if (!codeElement) return
+          
+          const textToCopy = codeElement.textContent || ''
+          
+          try {
+            await navigator.clipboard.writeText(textToCopy)
+            
+            // Thay đổi icon thành checkmark
+            copyButton.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+              </svg>
+            `
+            copyButton.classList.add('copied')
+            
+            // Đổi lại sau 2 giây
+            setTimeout(() => {
+              copyButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M4 4v1h1V4h6v6h-1v1h1.5a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5zM3.5 6A.5.5 0 0 0 3 6.5v7a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7z"/>
+                </svg>
+              `
+              copyButton.classList.remove('copied')
+            }, 2000)
+          } catch (err) {
+            console.error('Failed to copy:', err)
+          }
+        })
+        
+        block.appendChild(copyButton)
+      })
+    }
+
+    // Chạy sau khi component render
+    const timer = setTimeout(addCopyButtons, 100)
+    
+    return () => clearTimeout(timer)
+  }, [recordMap])
+
   return (
     <StyledWrapper scheme={scheme}>
       <_NotionRenderer
@@ -102,7 +163,7 @@ const StyledWrapper = styled.div<{ scheme: string }>`
     line-height: 1.4;
   }
 
-  /* ===== CUSTOM CODE BLOCK STYLING (giống VS Code) ===== */
+  /* ===== CUSTOM CODE BLOCK STYLING ===== */
   
   /* Container của code block */
   .notion-code {
@@ -111,104 +172,82 @@ const StyledWrapper = styled.div<{ scheme: string }>`
     margin: 1.5em 0;
     background: ${props => props.scheme === "dark" ? "#1e1e1e" : "#f6f8fa"} !important;
     border: 1px solid ${props => props.scheme === "dark" ? "#333" : "#e1e4e8"};
+    position: relative;
   }
 
-  /* Language label (dropdown fake) */
-  pre[class*="language-"]::before {
-    content: "";
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    padding: 4px 10px 4px 8px;
-    background: ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)"};
-    border: 1px solid ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)"};
-    border-radius: 4px;
-    font-size: 12px;
-    color: ${props => props.scheme === "dark" ? "#cccccc" : "#586069"};
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    z-index: 10;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.2s ease;
-  }
-
-  /* Hiển thị tên ngôn ngữ */
-  pre[class*="language-bash"]::before { content: "Bash ▾"; }
-  pre[class*="language-javascript"]::before { content: "JavaScript ▾"; }
-  pre[class*="language-typescript"]::before { content: "TypeScript ▾"; }
-  pre[class*="language-python"]::before { content: "Python ▾"; }
-  pre[class*="language-java"]::before { content: "Java ▾"; }
-  pre[class*="language-cpp"]::before { content: "C++ ▾"; }
-  pre[class*="language-css"]::before { content: "CSS ▾"; }
-  pre[class*="language-html"]::before { content: "HTML ▾"; }
-  pre[class*="language-json"]::before { content: "JSON ▾"; }
-  pre[class*="language-markdown"]::before { content: "Markdown ▾"; }
-  pre[class*="language-sql"]::before { content: "SQL ▾"; }
-  pre[class*="language-jsx"]::before { content: "JSX ▾"; }
-  pre[class*="language-tsx"]::before { content: "TSX ▾"; }
-
-  pre[class*="language-"]::before:hover {
-    background: ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"};
-  }
-
-  /* Code pre container - TỰ ĐỘNG XUỐNG DÒNG */
+  /* Code pre container - Tăng line-height */
   .notion-code pre {
     background: ${props => props.scheme === "dark" ? "#1e1e1e" : "#f6f8fa"} !important;
-    padding: 16px 16px 16px 50px !important;
+    padding: 20px !important;  /* Tăng padding */
     margin: 0 !important;
     border-radius: 0 !important;
-    overflow-x: auto !important;  /* Giữ lại để phòng trường hợp */
-    overflow-wrap: break-word !important;  /* Tự động xuống dòng */
-    word-wrap: break-word !important;  /* Hỗ trợ trình duyệt cũ */
-    white-space: pre-wrap !important;  /* Giữ format nhưng cho phép wrap */
-    word-break: break-all !important;  /* Break từ dài nếu cần */
+    overflow-x: auto !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
     position: relative;
   }
 
   /* Ẩn nút copy mặc định của notion */
   .notion-code .notion-code-copy-button {
-    display: none;
+    display: none !important;
   }
 
-  /* Code text color và word wrap */
+  /* Code text - TĂNG LINE HEIGHT */
   .notion-code code {
     color: ${props => props.scheme === "dark" ? "#d4d4d4" : "#24292e"} !important;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
-    font-size: 13px !important;
-    line-height: 1.6 !important;
-    white-space: pre-wrap !important;  /* Cho phép xuống dòng */
+    font-size: 14px !important;  /* Tăng size lên 14px */
+    line-height: 1.8 !important;  /* Tăng line-height lên 1.8 */
+    white-space: pre-wrap !important;
     word-wrap: break-word !important;
     word-break: break-all !important;
+    display: block !important;
   }
 
-  /* Custom copy button (giống VS Code) */
-  .notion-code {
-    position: relative;
-  }
-
-  .notion-code::after {
-    content: "";
+  /* Custom copy button (HOẠT ĐỘNG ĐƯỢC) */
+  .custom-copy-button {
     position: absolute;
     top: 12px;
-    right: 80px;
-    width: 18px;
-    height: 18px;
+    right: 12px;
+    padding: 6px 8px;
+    background: ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)"};
+    border: 1px solid ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)"};
+    border-radius: 6px;
     cursor: pointer;
-    opacity: 0.5;
-    transition: opacity 0.2s;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='%23cccccc'%3E%3Cpath d='M4 4v1h1V4h6v6h-1v1h1.5a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7a.5.5 0 0 0-.5.5zM3.5 6A.5.5 0 0 0 3 6.5v7a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-7z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-size: contain;
+    color: ${props => props.scheme === "dark" ? "#cccccc" : "#586069"};
+    transition: all 0.2s ease;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
   }
 
-  .notion-code::after:hover {
+  .custom-copy-button:hover {
     opacity: 1;
+    background: ${props => props.scheme === "dark" ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"};
+    transform: translateY(-1px);
   }
 
-  /* Scrollbar styling (chỉ xuất hiện khi thực sự cần) */
+  .custom-copy-button:active {
+    transform: translateY(0);
+  }
+
+  .custom-copy-button.copied {
+    color: #10b981;
+    border-color: #10b981;
+    background: ${props => props.scheme === "dark" ? "rgba(16, 185, 129, 0.1)" : "rgba(16, 185, 129, 0.1)"};
+  }
+
+  /* Icon trong button */
+  .custom-copy-button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Scrollbar styling */
   .notion-code pre::-webkit-scrollbar {
     height: 10px;
   }
